@@ -19,12 +19,12 @@ with open('../contents/test_3ss.pptx', 'rb') as rfile:
 
 uploaded_file = st.file_uploader("Загрузите xlsx")
 
-if uploaded_file is not None:
-    with open('file.xlsx', 'wb') as wfile:
+if uploaded_file:
+    with open('../contents/file.xlsx', 'wb') as wfile:
         wfile.write(uploaded_file.read())
-        process('file.xlsx', 'file.pptx')
+        process('../contents/file.xlsx', 'file.pptx')
 
-    with open('file.pptx', 'rb') as rfile:
+    with open('../contents/file.pptx', 'rb') as rfile:
         buffer = BytesIO(rfile.read())
     buffer.seek(0)
     st.download_button(
