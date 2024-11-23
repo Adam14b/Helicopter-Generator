@@ -1,20 +1,22 @@
 from report import Report
-from pptx.enum.shapes import MSO_SHAPE, MSO_SHAPE_TYPE
+from pptx.enum.shapes import MSO_SHAPE
 from datetime import date
 from config import *
 from copy import deepcopy
 
 class Timeline:
-    def __init__(self, report: Report, y_top: int, y_bottom: int, start_date: date, final_date: date, description: list[str] = [], show_start_date=True) -> None:
+    def __init__(self, report: Report, y_top: int, y_bottom: int, start_date: date, final_date: date, description: list = [], show_start_date=True) -> None:
         self.report = report
         self.timeline_y = (y_top + y_bottom) / 2
         self.y_top = y_top
         self.y_bottom = y_bottom
 
-        start_x = report.date_to_x(start_date)
-        final_x = report.date_to_x(final_date)
+        try:
+            start_x = report.date_to_x(start_date)
+            final_x = report.date_to_x(final_date)
+        except ValueError:
+            return
 
-        # Проверяем, находится ли текущая дата в диапазоне
         try:
             now_x = report.date_to_x(report.now_date)
         except ValueError:
@@ -49,6 +51,11 @@ class Timeline:
             figure_type = figure_description
             color = None
 
+        try:
+            x_position = self.report.date_to_x(date_)
+        except ValueError:
+            return
+
         if figure_type in ['план', 'сдвиг срока', 'провал']:
             if color is None:
                 if figure_type == 'план' and date_ <= self.report.now_date:
@@ -59,7 +66,7 @@ class Timeline:
                     color = YELLOW
                 elif figure_type == 'провал':
                     color = RED
-            self.report.add_figure(colored_flag(color, date_ <= self.report.now_date), self.report.date_to_x(date_) - 6, self.timeline_y - 12)
+            self.report.add_figure(colored_flag(color, date_ <= self.report.now_date), x_position - 6, self.timeline_y - 12)
         else:
             figure = deepcopy(fig_dict[figure_type])
             if color is None:
@@ -73,16 +80,19 @@ class Timeline:
                         subfigure.fill.solid()
                         subfigure.fill.fore_color.rgb = color
 
-            self.report.add_figure(figure, self.report.date_to_x(date_) - 6, self.timeline_y - 14)
+            self.report.add_figure(figure, x_position - 6, self.timeline_y - 14)
 
         if write_date:
-            self.report.add_text(date_to_text(date_), self.report.date_to_x(date_) - 20, self.timeline_y - 20, width_pt=40, height_pt=10)
+            self.report.add_text(date_to_text(date_), x_position - 20, self.timeline_y - 20, width_pt=40, height_pt=10)
         if note:
-            self.report.add_text(note, self.report.date_to_x(date_) - 20, self.timeline_y + 3, width_pt=40, height_pt=10)
+            self.report.add_text(note, x_position - 20, self.timeline_y + 3, width_pt=40, height_pt=10)
 
     def add_arrow(self, start_date: date, final_date: date):
-        start_x = self.report.date_to_x(start_date)
-        final_x = self.report.date_to_x(final_date)
+        try:
+            start_x = self.report.date_to_x(start_date)
+            final_x = self.report.date_to_x(final_date)
+        except ValueError:
+            return
         self.report.add_arrow(start_x - 6, self.timeline_y - 3, final_x - start_x, 0, color=YELLOW if start_date < final_date else GREEN)
 
     def add_gold(self, text: str, y: int):
@@ -95,7 +105,11 @@ class Timeline:
         shape_paragraph.font.color.rgb = BLACK
 
     def add_comment(self, text: str, date_: date, size: float):
-        shape = self.report.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, self.report.date_to_x(date_) - size / 2, self.timeline_y + 10, size, 10, fill=False, color=YELLOW)
+        try:
+            x_position = self.report.date_to_x(date_)
+        except ValueError:
+            return
+        shape = self.report.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, x_position - size / 2, self.timeline_y + 10, size, 10, fill=False, color=YELLOW)
         shape_paragraph = shape.text_frame.paragraphs[0]
         shape_paragraph.text = text
         shape_paragraph.font.size = Pt(5)

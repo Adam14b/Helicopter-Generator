@@ -2,7 +2,8 @@ import pandas as pd
 from report import Report
 from timeline import Timeline
 from datetime import date
-from config import fig_dict
+from config import fig_dict, CONTENT_DIR
+import os
 
 def _str_to_date(date_str):
     try:
@@ -15,8 +16,7 @@ def process(in_file: str, out_file: str):
     data = pd.read_excel(in_file)
     dates = []
     tasks_per_quarter = {}
-
-    total_tasks = 0  # Общее количество задач
+    total_tasks = 0
 
     for i, (main, param_1, param_2) in enumerate(zip(data.columns[::3], data.columns[1::3], data.columns[2::3])):
         main_column = data[main]
@@ -27,7 +27,6 @@ def process(in_file: str, out_file: str):
         final_date = _str_to_date(param_2_column[1])
         dates.extend([start_date, final_date])
 
-        # Добавляем задачи в кварталы
         for date_ in [start_date, final_date]:
             quarter = (date_.year, (date_.month - 1) // 3 + 1)
             tasks_per_quarter.setdefault(quarter, 0)
@@ -42,7 +41,7 @@ def process(in_file: str, out_file: str):
                 date1 = _str_to_date(param_1_column[k])
                 date2 = _str_to_date(param_2_column[k])
                 dates.extend([date1, date2])
-            elif main_column[k] in fig_dict.keys() or isinstance(main_column[k], str) and '/' in main_column[k] and main_column[k].split('/')[0] in fig_dict.keys():
+            elif main_column[k] in fig_dict.keys() or (isinstance(main_column[k], str) and '/' in main_column[k] and main_column[k].split('/')[0] in fig_dict.keys()):
                 date_ = _str_to_date(param_1_column[k])
                 dates.append(date_)
                 quarter = (date_.year, (date_.month - 1) // 3 + 1)
@@ -52,8 +51,6 @@ def process(in_file: str, out_file: str):
 
     earliest_date = min(dates)
     latest_date = max(dates)
-
-    # Создаем отсортированный список кварталов с задачами
     quarters_with_tasks = sorted(tasks_per_quarter.keys())
 
     report = Report(_str_to_date(data.columns[0]), quarters_with_tasks, tasks_per_quarter, total_tasks)
@@ -91,4 +88,4 @@ def process(in_file: str, out_file: str):
 
         running_top += timeline_height
 
-    report.save(f'../contents/{out_file}')
+    report.save(os.path.join(CONTENT_DIR, out_file))
